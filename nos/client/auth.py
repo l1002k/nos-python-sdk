@@ -3,8 +3,9 @@
 import base64
 import hashlib
 import hmac
+import io
 import time
-import urllib2
+import urllib
 import copy
 from .utils import (HTTP_HEADER, NOS_HEADER_PREFIX, TIME_CST_FORMAT,
                     CHUNK_SIZE, SUB_RESOURCE, USER_AGENT)
@@ -50,7 +51,7 @@ class RequestMetaData(object):
         # init content-md5 header
         if self.body is not None:
             md5 = hashlib.md5()
-            if isinstance(self.body, file):
+            if isinstance(self.body, io.IOBase):
                 offset = self.body.tell()
                 while True:
                     data = self.body.read(CHUNK_SIZE)
@@ -67,14 +68,14 @@ class RequestMetaData(object):
 
         # init authorization header
         if None not in (self.access_key_id, self.access_key_secret):
-            str_to_sign = self._get_string_to_sign()
-            hmac_sha1 = hmac.new(str(self.access_key_secret),
+            str_to_sign = self._get_string_to_sign().encode(encoding='utf-8')
+            hmac_sha1 = hmac.new(self.access_key_secret.encode(encoding='utf-8'),
                                  str_to_sign, hashlib.sha256)
-            b64_hmac_sha1 = base64.encodestring(hmac_sha1.digest()).strip()
-            authorization_string = b64_hmac_sha1.rstrip('\n')
+            b64_hmac_sha1 = base64.encodebytes(hmac_sha1.digest()).strip()
+            authorization_string = b64_hmac_sha1.rstrip(b'\n')
 
-            self.headers[HTTP_HEADER.AUTHORIZATION] = 'NOS %s:%s' % (
-                self.access_key_id, authorization_string
+            self.headers[HTTP_HEADER.AUTHORIZATION] = 'NOS {}:{}'.format(
+                self.access_key_id, authorization_string.decode()
             )
 
     def _complete_url(self):
@@ -85,21 +86,21 @@ class RequestMetaData(object):
         self.url = "https://" if self.enable_ssl else "http://"
 
         if self.bucket is None:
-            self.url += '%s/' % self.end_point
+            self.url += '{}/'.format(self.end_point)
         else:
-            self.url += '%s.%s/' % (self.bucket, self.end_point)
+            self.url += '{}.{}/'.format(self.bucket, self.end_point)
 
         if self.key is not None:
-            self.url += urllib2.quote(self.key.strip('/'), '*')
+            self.url += urllib.parse.quote(self.key.strip('/'), '*')
 
         if not self.params:
             return
 
         pairs = []
-        for k, v in self.params.iteritems():
+        for k, v in self.params.items():
             piece = k
             if v is not None:
-                piece += "=%s" % urllib2.quote(str(v), '*')
+                piece += "={}".format(urllib.parse.quote(str(v), '*'))
             pairs.append(piece)
         query_string = '&'.join(pairs)
         self.url += ("?" + query_string)
@@ -112,9 +113,9 @@ class RequestMetaData(object):
         @return: canonical string for netease storage service
         """
         headers = dict([(k.lower(), str(v).strip().strip("'\""))
-                        for k, v in self.headers.iteritems()])
+                        for k, v in self.headers.items()])
 
-        meta_headers = dict([(k, v) for k, v in headers.iteritems()
+        meta_headers = dict([(k, v) for k, v in headers.items()
                              if k.startswith(NOS_HEADER_PREFIX)])
 
         content_type = headers.get(HTTP_HEADER.CONTENT_TYPE.lower(), '')
@@ -130,13 +131,12 @@ class RequestMetaData(object):
             expires or date
         )
 
-        sorted_meta_headers = meta_headers.keys()
-        sorted_meta_headers.sort()
+        sorted_meta_headers = sorted(meta_headers.keys())
 
         for meta_header in sorted_meta_headers:
-            str_to_sign += '%s:%s\n' % (meta_header, meta_headers[meta_header])
+            str_to_sign += '{}:{}\n'.format(meta_header, meta_headers[meta_header])
 
-        str_to_sign += "%s" % (self._get_canonicalized_resource())
+        str_to_sign += '{}'.format(self._get_canonicalized_resource())
         return str_to_sign
 
     def _get_canonicalized_resource(self):
@@ -147,22 +147,22 @@ class RequestMetaData(object):
         buf = '/'
         # append the bucket if it exists
         if self.bucket is not None:
-            buf += "%s/" % self.bucket
+            buf += "{}/".format(self.bucket)
 
         # add the key.  even if it doesn't exist, add the slash
         if self.key is not None:
-            buf += urllib2.quote(self.key.strip('/'), '*')
+            buf += urllib.parse.quote(self.key.strip('/'), '*')
 
         # handle sub source in special query string arguments
         if self.params:
             buf += "?"
             pairs = []
-            for k, v in self.params.iteritems():
+            for k, v in self.params.items():
                 if k not in SUB_RESOURCE:
                     continue
                 piece = k
                 if v is not None:
-                    piece += "=%s" % urllib2.quote(str(v), '*')
+                    piece += "={}".format(urllib.parse.quote(str(v), '*'))
                 pairs.append(piece)
 
             buf += '&'.join(pairs)

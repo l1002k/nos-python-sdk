@@ -7,7 +7,7 @@ from ..transport import Transport
 from ..compat import ET
 
 import cgi
-import urllib2
+import urllib
 
 
 def parse_xml(status, headers, body):
@@ -275,7 +275,7 @@ class Client(object):
         """
         keys = set(['delimiter', 'marker', 'limit', 'prefix'])
         params = {}
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             if k in keys:
                 params[k] = v
 
@@ -314,7 +314,7 @@ class Client(object):
         :raise ServiceException: If any errors occurred in NOS server point.
         """
         headers = {}
-        for k, v in kwargs.get('meta_data', {}).iteritems():
+        for k, v in kwargs.get('meta_data', {}).items():
             headers[k] = v
 
         _, headers, body = self.transport.perform_request(
@@ -341,10 +341,8 @@ class Client(object):
         :raise ClientException: If any errors are occured in the client point.
         :raise ServiceException: If any errors occurred in NOS server point.
         """
-        src_bucket = src_bucket.encode('utf-8') \
-                if isinstance(src_bucket, unicode) else src_bucket
-        src_key = src_key.encode('utf-8') \
-                if isinstance(src_key, unicode) else src_key
+        src_bucket = src_bucket.encode('utf-8').decode('utf-8') if isinstance(src_bucket, str) else src_bucket
+        src_key = src_key.encode('utf-8').decode('utf-8') if isinstance(src_key, str) else src_key
         if src_bucket is not None and src_bucket == '':
             raise InvalidBucketName()
         if src_key is not None and src_key == '':
@@ -352,7 +350,7 @@ class Client(object):
 
         headers = {}
         headers[HTTP_HEADER.X_NOS_COPY_SOURCE] = '/%s/%s' % (
-            src_bucket, urllib2.quote(src_key.strip('/'), '*')
+            src_bucket, urllib.parse.quote(src_key.strip('/'), '*')
         )
 
         _, headers, _ = self.transport.perform_request(
@@ -378,10 +376,8 @@ class Client(object):
         :raise ClientException: If any errors are occured in the client point.
         :raise ServiceException: If any errors occurred in NOS server point.
         """
-        src_bucket = src_bucket.encode('utf-8') \
-                if isinstance(src_bucket, unicode) else src_bucket
-        src_key = src_key.encode('utf-8') \
-                if isinstance(src_key, unicode) else src_key
+        src_bucket = src_bucket.encode('utf-8').decode('utf-8') if isinstance(src_bucket, str) else src_bucket
+        src_key = src_key.encode('utf-8') if isinstance(src_key, str) else src_key
         if src_bucket is not None and src_bucket == '':
             raise InvalidBucketName()
         if src_key is not None and src_key == '':
@@ -389,7 +385,7 @@ class Client(object):
 
         headers = {}
         headers[HTTP_HEADER.X_NOS_MOVE_SOURCE] = '/%s/%s' % (
-            src_bucket, urllib2.quote(src_key.strip('/'), '*')
+            src_bucket, urllib.parse.quote(src_key.strip('/'), '*')
         )
 
         _, headers, _ = self.transport.perform_request(
@@ -423,7 +419,7 @@ class Client(object):
         :raise ServiceException: If any errors occurred in NOS server point.
         """
         headers = {}
-        for k, v in kwargs.get('meta_data', {}).iteritems():
+        for k, v in kwargs.get('meta_data', {}).items():
             headers[k] = v
 
         params = {'uploads': None}

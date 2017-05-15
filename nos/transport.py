@@ -1,5 +1,6 @@
 # -*- coding:utf8 -*-
 
+import io
 from .connection import Urllib3HttpConnection
 from .serializer import JSONSerializer
 from .exceptions import (NOSException, ServiceException, ConnectionError,
@@ -42,11 +43,11 @@ class Transport(object):
 
     def perform_request(self, method, bucket=None, key=None, params={},
                         body=None, headers={}, timeout=None):
-        method = method.encode('utf-8') \
-                if isinstance(method, unicode) else method
-        bucket = bucket.encode('utf-8') \
-                if isinstance(bucket, unicode) else bucket
-        key = key.encode('utf-8') if isinstance(key, unicode) else key
+        method = method.encode('utf-8').decode('utf-8') \
+            if isinstance(method, str) else method
+        bucket = bucket.encode('utf-8').decode('utf-8') \
+            if isinstance(bucket, str) else bucket
+        key = key.encode('utf-8').decode('utf-8') if isinstance(key, str) else key
 
         if bucket is not None and bucket == '':
             raise InvalidBucketName()
@@ -57,7 +58,7 @@ class Transport(object):
         if body is not None:
             body = self.serializer.dumps(body)
             length = 0
-            if isinstance(body, file):
+            if isinstance(body, io.IOBase):
                 if 'b' not in body.mode.lower():
                     raise FileOpenModeError()
                 offset = body.tell()
@@ -92,7 +93,7 @@ class Transport(object):
         url = meta_data.get_url()
         headers = meta_data.get_headers()
 
-        for attempt in xrange(self.max_retries + 1):
+        for attempt in range(self.max_retries + 1):
             try:
                 status, headers, body = self.connection.perform_request(
                     method, url, body, headers,

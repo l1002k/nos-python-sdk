@@ -8,3 +8,4 @@ coverage.xml
 nosetests.xml
 *.egg-info/
 *.pyc
+.idea

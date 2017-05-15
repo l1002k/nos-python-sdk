@@ -30,9 +30,9 @@ class Urllib3HttpConnection(object):
             # unicode. Otherwise the body will be decoded into unicode too and
             # that will fail.
             if not isinstance(url, str):
-                url = url.encode('utf-8')
+                url = url.encode('utf-8').decode('utf-8')
             if not isinstance(method, str):
-                method = method.encode('utf-8')
+                method = method.encode('utf-8').decode('utf-8')
 
             response = self.pool.urlopen(method, url, body=body, retries=False,
                                          headers=headers, **kw)

@@ -1,5 +1,6 @@
 # -*- coding:utf8 -*-
 
+import io
 try:
     import simplejson as json
 except ImportError:
@@ -27,13 +28,13 @@ class JSONSerializer(object):
     def dumps(self, data):
         # don't serialize strings
         if isinstance(data, string_types):
-            if isinstance(data, unicode):
+            if isinstance(data, str):
                 return data.encode("utf-8")
             else:
                 return data
 
         # don't serialize file
-        if isinstance(data, file):
+        if isinstance(data, io.IOBase):
             return data
 
         try:
